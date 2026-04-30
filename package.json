@@ -1,0 +1,26 @@
+{
+  "name": "dna-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\" --names \"SERVER,CLIENT\" --prefix-colors \"blue,green\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm install && npm run build",
+    "start": "NODE_ENV=production node server/index.js",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "nodemon": "^3.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
