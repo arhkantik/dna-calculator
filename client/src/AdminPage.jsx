@@ -185,7 +185,7 @@ function AnswerBadge({ color, label }) {
     red:    { background: '#fee2e2', color: '#991b1b' }
   }[color] || { background: '#f3f4f6', color: '#374151' };
   return (
-    <span className="answer-badge" style={{ ...styles, fontWeight: 600 }}>{label}</span>
+    <span className="answer-badge diag-answer" style={{ ...styles, fontWeight: 600 }}>{label}</span>
   );
 }
 
@@ -232,7 +232,7 @@ function LeadDetail({ lead }) {
               <span className="diag-question">{q.label}</span>
               {opt
                 ? <AnswerBadge color={opt.color} label={opt.label} />
-                : <span className="answer-badge">{val}</span>
+                : <span className="answer-badge diag-answer">{val}</span>
               }
             </div>
           );
