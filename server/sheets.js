@@ -16,12 +16,18 @@ const NICHE_LABELS = {
 
 function getAuth() {
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey  = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-  if (!clientEmail || !privateKey || !SHEET_ID) return null;
+  const rawKey      = process.env.GOOGLE_PRIVATE_KEY || '';
+  const privateKey  = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
 
-  return new google.auth.JWT(clientEmail, null, privateKey, [
-    'https://www.googleapis.com/auth/spreadsheets'
-  ]);
+  console.log('[Sheets] auth check — email:', !!clientEmail, 'keyLen:', privateKey.length, 'sheetId:', !!SHEET_ID);
+
+  if (!clientEmail || privateKey.length < 100 || !SHEET_ID) return null;
+
+  return new google.auth.JWT({
+    email: clientEmail,
+    key: privateKey,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+  });
 }
 
 async function ensureHeaders(sheets) {
