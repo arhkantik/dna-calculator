@@ -229,7 +229,7 @@ function LeadDetail({ lead }) {
           const opt = q.options[val];
           return (
             <div key={q.key} className="diag-row">
-              <span className="diag-question">{q.label}</span>
+              <span className="diag-question">{q.label}:</span>{' '}
               {opt
                 ? <AnswerBadge color={opt.color} label={opt.label} />
                 : <span className="answer-badge diag-answer">{val}</span>

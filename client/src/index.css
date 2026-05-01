@@ -854,34 +854,21 @@ body {
 }
 .detail-diagnostic {
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
 }
 .diag-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 16px;
-  font-size: 13px;
   padding: 7px 0;
   border-bottom: 1px solid #f3f4f6;
-  box-sizing: border-box;
+  font-size: 13px;
+  line-height: 1.5;
 }
 .diag-row:last-child { border-bottom: none; }
 .diag-question {
-  color: #374151;
-  word-break: break-word;
+  color: #6b7280;
+  margin-right: 6px;
 }
 .diag-answer {
-  white-space: nowrap;
-  text-align: right;
-}
-@media (max-width: 600px) {
-  .diag-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-  .diag-answer { text-align: left; }
+  display: inline-block;
+  vertical-align: middle;
 }
 .detail-answers {
   display: flex;
