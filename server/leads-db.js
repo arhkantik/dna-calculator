@@ -33,6 +33,7 @@ db.exec(`
 // Миграция: добавляем поля если таблица уже существует без них
 try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg INTEGER DEFAULT 0`); } catch {}
 try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg_at TEXT`); } catch {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN manager TEXT`); } catch {}
 
 const insertStmt = db.prepare(`
   INSERT INTO leads
@@ -84,4 +85,8 @@ function markLeadClickedTg(id) {
   ).run(Number(id));
 }
 
-module.exports = { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg };
+function updateLeadManager(id, manager) {
+  db.prepare('UPDATE leads SET manager = ? WHERE id = ?').run(manager || null, Number(id));
+}
+
+module.exports = { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg, updateLeadManager };

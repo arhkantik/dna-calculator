@@ -45,6 +45,14 @@ export function updateLeadStatus(id, status) {
   });
 }
 
+export function updateLeadManager(id, manager) {
+  return request(`/admin/leads/${id}/manager`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ manager })
+  });
+}
+
 export function markLeadClicked(lead_id) {
   return request('/lead-clicked', {
     method:  'POST',

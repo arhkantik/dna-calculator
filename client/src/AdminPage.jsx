@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminLeads, updateLeadStatus } from './api.js';
+import { getAdminLeads, updateLeadStatus, updateLeadManager } from './api.js';
 
 const NICHE_LABELS = {
   nails:   'Ногти/ресницы',
@@ -12,6 +12,8 @@ const NICHE_LABELS = {
 };
 
 const CITY_LABELS = { moscow: 'Москва/СПб', region: 'Регион' };
+
+const MANAGERS = ['', 'Екатерина', 'Артём'];
 
 const STATUS_OPTIONS = [
   { value: 'new',       label: '🟡 Новый' },
@@ -60,11 +62,18 @@ export default function AdminPage() {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   }
 
+  async function handleManagerChange(id, manager) {
+    await updateLeadManager(id, manager);
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, manager } : l));
+  }
+
   const total      = leads.length;
   const newCount   = leads.filter(l => l.status === 'new').length;
   const avgPotential = total > 0
     ? Math.round(leads.reduce((s, l) => s + (l.potential_monthly || 0), 0) / total)
     : 0;
+  const katCount  = leads.filter(l => l.manager === 'Екатерина').length;
+  const artemCount = leads.filter(l => l.manager === 'Артём').length;
 
   return (
     <>
@@ -86,6 +95,14 @@ export default function AdminPage() {
           <div className="admin-stat">
             <div className="admin-stat-val">{fmt(avgPotential)} ₽</div>
             <div className="admin-stat-label">Средний потенциал</div>
+          </div>
+          <div className="admin-stat">
+            <div className="admin-stat-val">{katCount}</div>
+            <div className="admin-stat-label">Екатерина</div>
+          </div>
+          <div className="admin-stat">
+            <div className="admin-stat-val">{artemCount}</div>
+            <div className="admin-stat-label">Артём</div>
           </div>
         </div>
 
@@ -115,6 +132,7 @@ export default function AdminPage() {
                   <th>Потенциал/мес</th>
                   <th>Топ-боль</th>
                   <th>Написал в TG</th>
+                  <th>Менеджер</th>
                   <th>Статус</th>
                   <th>Действия</th>
                 </tr>
@@ -152,6 +170,18 @@ export default function AdminPage() {
                         <td>
                           <select
                             className="status-select"
+                            value={lead.manager || ''}
+                            onChange={e => handleManagerChange(lead.id, e.target.value)}
+                          >
+                            <option value="">Не назначен</option>
+                            {MANAGERS.filter(m => m).map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            className="status-select"
                             value={lead.status || 'new'}
                             onChange={e => handleStatusChange(lead.id, e.target.value)}
                           >
@@ -182,7 +212,7 @@ export default function AdminPage() {
 
                       {isExpanded && (
                         <tr className="detail-row">
-                          <td colSpan={10}>
+                          <td colSpan={11}>
                             <div className="lead-detail">
                               <div className="detail-grid">
                                 <div><b>Ниша:</b> {NICHE_LABELS[lead.niche] || lead.niche}</div>

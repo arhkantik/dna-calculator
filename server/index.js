@@ -8,7 +8,7 @@ const cors    = require('cors');
 
 const { calculate }       = require('./calculate');
 const { saveDiagnostic, getHistory, getDiagnosticById } = require('./db');
-const { saveLead, getLeads, updateLeadStatus, markLeadClickedTg } = require('./leads-db');
+const { saveLead, getLeads, updateLeadStatus, markLeadClickedTg, updateLeadManager } = require('./leads-db');
 
 const app  = express();
 const PROD = process.env.NODE_ENV === 'production';
@@ -144,6 +144,19 @@ app.patch('/api/admin/leads/:id/status', (req, res) => {
     const allowed = ['new', 'contacted', 'scheduled', 'closed'];
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Неверный статус' });
     updateLeadStatus(req.params.id, status);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/admin/leads/:id/manager
+app.patch('/api/admin/leads/:id/manager', (req, res) => {
+  try {
+    const { manager } = req.body;
+    const allowed = [null, '', 'Екатерина', 'Артём'];
+    if (!allowed.includes(manager)) return res.status(400).json({ error: 'Неверный менеджер' });
+    updateLeadManager(req.params.id, manager);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
