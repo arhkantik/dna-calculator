@@ -37,7 +37,10 @@ if (USE_PG) {
       manager           TEXT,
       source            TEXT DEFAULT 'lead'
     )
-  `).catch(console.error);
+  `)
+  .then(() => pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'lead'`))
+  .then(() => pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS manager TEXT`))
+  .catch(console.error);
 
 } else {
   const path     = require('path');
