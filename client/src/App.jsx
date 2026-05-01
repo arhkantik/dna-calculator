@@ -56,6 +56,7 @@ export default function App() {
   const [results, setResults]   = useState(null);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [leadId, setLeadId]     = useState(null);
 
   function handleWelcomeNext(data) {
     setLeadData(data);
@@ -70,6 +71,34 @@ export default function App() {
       const data = await diagnose(step1Data, ans);
       setResults(data);
       setStep(3);
+      // Сохраняем лид сразу при показе результатов
+      try {
+        const { id } = await saveLead({
+          name:             leadData?.name || '',
+          telegram:         leadData?.telegram || '',
+          niche:            step1Data.niche,
+          city:             step1Data.city,
+          revenue:          step1Data.revenue,
+          masters:          step1Data.masters,
+          seats:            step1Data.seats,
+          baseSize:         step1Data.baseSize,
+          activeClients:    step1Data.activeClients,
+          activeRatePct:    data.activeRate,
+          answers:          ans,
+          potentialMonthly: data.totalMonthly,
+          potentialAnnual:  data.totalAnnual,
+          topPains: (data.growthPoints || []).map(p => ({
+            label:    p.label,
+            amount:   p.amount,
+            icon:     p.icon,
+            moduleId: p.moduleId
+          })),
+          modulesTriggered: (data.growthPoints || []).map(p => p.moduleId)
+        });
+        setLeadId(id);
+      } catch (e) {
+        console.error('Save lead error:', e);
+      }
     } catch (e) {
       setError(e.message || 'Ошибка сервера');
     } finally {
@@ -77,36 +106,8 @@ export default function App() {
     }
   }
 
-  async function handleBooking() {
-    if (!results || !leadData) return null;
-    try {
-      const { id } = await saveLead({
-        name:             leadData.name,
-        telegram:         leadData.telegram,
-        niche:            step1Data.niche,
-        city:             step1Data.city,
-        revenue:          step1Data.revenue,
-        masters:          step1Data.masters,
-        seats:            step1Data.seats,
-        baseSize:         step1Data.baseSize,
-        activeClients:    step1Data.activeClients,
-        activeRatePct:    results.activeRate,
-        answers,
-        potentialMonthly: results.totalMonthly,
-        potentialAnnual:  results.totalAnnual,
-        topPains: (results.growthPoints || []).map(p => ({
-          label:    p.label,
-          amount:   p.amount,
-          icon:     p.icon,
-          moduleId: p.moduleId
-        })),
-        modulesTriggered: (results.growthPoints || []).map(p => p.moduleId)
-      });
-      return id;
-    } catch (e) {
-      console.error('Save lead error:', e);
-      return null;
-    }
+  function handleBooking() {
+    return leadId;
   }
 
   function startOver() {
@@ -116,6 +117,7 @@ export default function App() {
     setAnswers({});
     setResults(null);
     setError('');
+    setLeadId(null);
   }
 
   return (
