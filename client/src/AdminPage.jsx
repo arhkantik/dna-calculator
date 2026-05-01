@@ -277,6 +277,7 @@ export default function AdminPage() {
   const [leads, setLeads]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [expandedId, setExpandedId] = useState(null);
+  const [sourceFilter, setSourceFilter] = useState('all');
 
   useEffect(() => {
     getAdminLeads()
@@ -294,6 +295,7 @@ export default function AdminPage() {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, manager } : l));
   }
 
+  const filteredLeads = sourceFilter === 'all' ? leads : leads.filter(l => l.source === sourceFilter);
   const total        = leads.length;
   const newCount     = leads.filter(l => l.status === 'new').length;
   const avgPotential = total > 0
@@ -332,6 +334,23 @@ export default function AdminPage() {
           </div>
         </div>
 
+        <div className="admin-filter">
+          <span className="admin-filter-label">Источник:</span>
+          {[
+            { value: 'all',     label: 'Все' },
+            { value: 'lead',    label: '🔵 Лиды' },
+            { value: 'manager', label: '🟢 Созвоны' }
+          ].map(f => (
+            <button
+              key={f.value}
+              className={`filter-btn${sourceFilter === f.value ? ' active' : ''}`}
+              onClick={() => setSourceFilter(f.value)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         {loading && (
           <div className="loading-state">
             <div className="spinner" />
@@ -339,18 +358,19 @@ export default function AdminPage() {
           </div>
         )}
 
-        {!loading && leads.length === 0 && (
+        {!loading && filteredLeads.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
             Заявок пока нет
           </div>
         )}
 
-        {!loading && leads.length > 0 && (
+        {!loading && filteredLeads.length > 0 && (
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
                   <th>Дата</th>
+                  <th>Источник</th>
                   <th>Имя</th>
                   <th>Telegram</th>
                   <th>Ниша</th>
@@ -364,7 +384,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {leads.map(lead => {
+                {filteredLeads.map(lead => {
                   const topPains  = JSON.parse(lead.top_pains || '[]');
                   const topPain   = topPains[0];
                   const isExpanded = expandedId === lead.id;
@@ -373,6 +393,9 @@ export default function AdminPage() {
                     <React.Fragment key={lead.id}>
                       <tr className={isExpanded ? 'row-expanded' : ''}>
                         <td className="admin-date">{fmtDate(lead.created_at)}</td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {lead.source === 'manager' ? '🟢 Созвон' : '🔵 Лид'}
+                        </td>
                         <td className="admin-name">{lead.name}</td>
                         <td>
                           <a
@@ -438,7 +461,7 @@ export default function AdminPage() {
 
                       {isExpanded && (
                         <tr className="detail-row">
-                          <td colSpan={11}>
+                          <td colSpan={12}>
                             <LeadDetail lead={lead} />
                           </td>
                         </tr>

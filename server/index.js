@@ -144,6 +144,7 @@ if (PROD) {
   app.use(express.static(dist));
   app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 }
+// В dev-режиме /manager обрабатывается Vite, в prod — catch-all выше
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

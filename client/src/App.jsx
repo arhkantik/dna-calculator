@@ -43,20 +43,29 @@ function StepsBar({ step }) {
   );
 }
 
-// Detect admin route
+// Определяем режим из URL: ?mode=manager или /manager → manager, иначе lead
+function detectMode() {
+  if (typeof window === 'undefined') return 'lead';
+  const path   = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  if (path === '/manager' || params.get('mode') === 'manager') return 'manager';
+  return 'lead';
+}
+
 const IS_ADMIN = typeof window !== 'undefined' && window.location.pathname === '/admin';
+const MODE     = detectMode();
 
 export default function App() {
   if (IS_ADMIN) return <AdminPage />;
 
-  const [step, setStep]         = useState(0); // 0=welcome, 1=form, 2=diagnostic, 3=results
-  const [leadData, setLeadData] = useState(null); // { name, telegram }
+  const [step, setStep]           = useState(0);
+  const [leadData, setLeadData]   = useState(null);
   const [step1Data, setStep1Data] = useState(null);
-  const [answers, setAnswers]   = useState({});
-  const [results, setResults]   = useState(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
-  const [leadId, setLeadId]     = useState(null);
+  const [answers, setAnswers]     = useState({});
+  const [results, setResults]     = useState(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [leadId, setLeadId]       = useState(null);
 
   function handleWelcomeNext(data) {
     setLeadData(data);
@@ -87,6 +96,7 @@ export default function App() {
           answers:          ans,
           potentialMonthly: data.totalMonthly,
           potentialAnnual:  data.totalAnnual,
+          source:           MODE,
           topPains: (data.growthPoints || []).map(p => ({
             label:    p.label,
             amount:   p.amount,
@@ -163,6 +173,7 @@ export default function App() {
             <Step3Results
               results={results}
               leadName={step1Data?.leadName || leadData?.name || ''}
+              mode={MODE}
               onReset={startOver}
               onBooking={handleBooking}
             />

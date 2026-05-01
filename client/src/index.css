@@ -720,6 +720,35 @@ body {
   border-collapse: collapse;
   font-size: 13px;
 }
+.admin-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.admin-filter-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+.filter-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: #374151;
+  transition: all .15s;
+}
+.filter-btn:hover { border-color: #9ca3af; }
+.filter-btn.active {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #7c3aed;
+}
+
 .admin-table th {
   background: #f9fafb;
   padding: 12px 14px;

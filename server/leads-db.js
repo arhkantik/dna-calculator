@@ -34,7 +34,8 @@ if (USE_PG) {
       status            TEXT DEFAULT 'new',
       clicked_tg        BOOLEAN DEFAULT FALSE,
       clicked_tg_at     TIMESTAMPTZ,
-      manager           TEXT
+      manager           TEXT,
+      source            TEXT DEFAULT 'lead'
     )
   `).catch(console.error);
 
@@ -65,12 +66,14 @@ if (USE_PG) {
       status            TEXT DEFAULT 'new',
       clicked_tg        INTEGER DEFAULT 0,
       clicked_tg_at     TEXT,
-      manager           TEXT
+      manager           TEXT,
+      source            TEXT DEFAULT 'lead'
     )
   `);
   try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg INTEGER DEFAULT 0`); } catch {}
   try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg_at TEXT`); } catch {}
   try { db.exec(`ALTER TABLE leads ADD COLUMN manager TEXT`); } catch {}
+  try { db.exec(`ALTER TABLE leads ADD COLUMN source TEXT DEFAULT 'lead'`); } catch {}
 }
 
 // ─── saveLead ────────────────────────────────────────────────────────────────
@@ -81,8 +84,8 @@ async function saveLead(d) {
       `INSERT INTO leads
         (name, telegram, niche, city, revenue, masters, seats, base_size,
          active_clients, active_rate_pct, answers, potential_monthly,
-         potential_annual, top_pains, modules_triggered)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         potential_annual, top_pains, modules_triggered, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING id`,
       [
         d.name, d.telegram, d.niche, d.city,
@@ -91,7 +94,8 @@ async function saveLead(d) {
         JSON.stringify(d.answers || {}),
         d.potentialMonthly, d.potentialAnnual,
         JSON.stringify(d.topPains || []),
-        JSON.stringify(d.modulesTriggered || [])
+        JSON.stringify(d.modulesTriggered || []),
+        d.source || 'lead'
       ]
     );
     return { id: res.rows[0].id };
@@ -100,11 +104,11 @@ async function saveLead(d) {
       INSERT INTO leads
         (name, telegram, niche, city, revenue, masters, seats, base_size,
          active_clients, active_rate_pct, answers, potential_monthly,
-         potential_annual, top_pains, modules_triggered)
+         potential_annual, top_pains, modules_triggered, source)
       VALUES
         (@name,@telegram,@niche,@city,@revenue,@masters,@seats,@base_size,
          @active_clients,@active_rate_pct,@answers,@potential_monthly,
-         @potential_annual,@top_pains,@modules_triggered)
+         @potential_annual,@top_pains,@modules_triggered,@source)
     `).run({
       name: d.name, telegram: d.telegram, niche: d.niche, city: d.city,
       revenue: d.revenue, masters: d.masters, seats: d.seats,
@@ -113,7 +117,8 @@ async function saveLead(d) {
       answers: JSON.stringify(d.answers || {}),
       potential_monthly: d.potentialMonthly, potential_annual: d.potentialAnnual,
       top_pains: JSON.stringify(d.topPains || []),
-      modules_triggered: JSON.stringify(d.modulesTriggered || [])
+      modules_triggered: JSON.stringify(d.modulesTriggered || []),
+      source: d.source || 'lead'
     });
     return { id: result.lastInsertRowid };
   }

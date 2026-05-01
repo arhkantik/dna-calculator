@@ -161,7 +161,7 @@ function pickBestModule(answers) {
   return 4;
 }
 
-export default function Step3Results({ results, leadName, onReset, onBooking }) {
+export default function Step3Results({ results, leadName, mode = 'lead', onReset, onBooking }) {
   const { formData } = results;
   const baseSize      = formData?.baseSize     || 0;
   const abonPotential = results.abonPotential  || 0;
@@ -234,8 +234,8 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
         )
       )}
 
-      {/* Карточки модулей */}
-      {triggeredModules.length > 0 && (
+      {/* Карточки модулей — только в режиме менеджера */}
+      {mode === 'manager' && triggeredModules.length > 0 && (
         <>
           <div className="section-title">
             {isNearNorm
@@ -264,8 +264,16 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
         </>
       )}
 
-      {/* CTA */}
-      <div className="cta-block">
+      {/* CTA — только в режиме лида */}
+      {mode === 'manager' && (
+        <div className="actions">
+          <button className="btn-primary" style={{ flex: 1 }} onClick={onReset}>
+            + Пройти заново
+          </button>
+        </div>
+      )}
+
+      {mode === 'lead' && <div className="cta-block">
         <div className="cta-badge">Бесплатно · Без обязательств</div>
         <h2 className="cta-title">
           Разберём ваши цифры лично
@@ -292,14 +300,15 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
         <button className="btn-cta" onClick={handleBooking}>
           Записаться на разбор →
         </button>
-      </div>
+      </div>}
 
-      {/* Actions */}
-      <div className="actions">
-        <button className="btn-primary" style={{ flex: 1 }} onClick={onReset}>
-          + Пройти заново
-        </button>
-      </div>
+      {mode === 'lead' && (
+        <div className="actions">
+          <button className="btn-primary" style={{ flex: 1 }} onClick={onReset}>
+            + Пройти заново
+          </button>
+        </div>
+      )}
     </div>
   );
 }
