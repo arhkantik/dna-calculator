@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const MODULE_NAMES = {
   1: 'Финансы и учёт',
@@ -91,33 +91,26 @@ function GrowthCard({ point }) {
   );
 }
 
-export default function Step3Results({ results, onReset, onNewDiag }) {
-  const [copied, setCopied] = useState(false);
+export default function Step3Results({ results, leadName, onReset, onBooking }) {
   const { formData } = results;
-
-  async function handleCopy() {
-    const text = results.generatedMessage;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
-
   const baseSize     = formData?.baseSize     || 0;
   const abonPotential = results.abonPotential || 0;
 
+  function handleBooking() {
+    const username = (import.meta.env.VITE_TG_MANAGER_USERNAME || 'manager').replace('@', '');
+    window.open(`https://t.me/${username}?text=ХОЧУ%20РАЗБОР`, '_blank');
+    if (onBooking) onBooking();
+  }
+
   return (
     <div>
+      {/* Персональное обращение */}
+      {leadName && (
+        <div className="results-greeting">
+          {leadName}, вот результаты диагностики вашего бизнеса:
+        </div>
+      )}
+
       {/* HERO */}
       <div className="hero-block">
         <div className="hero-eyebrow">Скрытый потенциал бизнеса</div>
@@ -169,30 +162,44 @@ export default function Step3Results({ results, onReset, onNewDiag }) {
         </>
       )}
 
-      {/* WhatsApp */}
-      <div className="section-title">Готовое сообщение</div>
-      <div className="card message-card">
-        <div className="message-header">
-          <h3>📱 WhatsApp-сообщение</h3>
-          <button
-            className={`copy-btn${copied ? ' copied' : ''}`}
-            onClick={handleCopy}
-          >
-            {copied ? 'Скопировано ✓' : 'Скопировать сообщение'}
-          </button>
+      {/* CTA — призыв на разбор */}
+      <div className="cta-block">
+        <div className="cta-badge">Бесплатно · Только 3 места в неделю</div>
+        <h2 className="cta-title">
+          Узнайте, как забрать эти деньги уже в следующем месяце
+        </h2>
+        <p className="cta-text">
+          Эксперт команды Ксении Смирновой разберёт ваш бизнес лично —
+          по цифрам, которые вы только что получили.
+        </p>
+
+        <div className="cta-bullets">
+          <div className="cta-bullet">
+            <span className="cta-bullet-icon">✓</span>
+            <span>Конкретный план — что делать в первые 30 дней</span>
+          </div>
+          <div className="cta-bullet">
+            <span className="cta-bullet-icon">✓</span>
+            <span>Разбор точек роста именно вашего бизнеса, а не общие советы</span>
+          </div>
+          <div className="cta-bullet">
+            <span className="cta-bullet-icon">✓</span>
+            <span>Ответы на ваши вопросы — без скриптов и давления</span>
+          </div>
         </div>
-        <div className="message-text">{results.generatedMessage}</div>
+
+        <button className="btn-cta" onClick={handleBooking}>
+          Записаться на бесплатный разбор →
+        </button>
+        <div className="cta-fine">
+          Разбор занимает 30–40 минут. Бесплатно и без обязательств.
+        </div>
       </div>
 
       {/* Actions */}
       <div className="actions">
-        {onNewDiag && (
-          <button className="btn-secondary" onClick={onNewDiag}>
-            ← К истории
-          </button>
-        )}
         <button className="btn-primary" style={{ flex: 1 }} onClick={onReset}>
-          + Новая диагностика
+          + Пройти заново
         </button>
       </div>
     </div>

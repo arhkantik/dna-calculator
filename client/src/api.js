@@ -24,3 +24,23 @@ export function getHistory() {
 export function getDiagnostic(id) {
   return request(`/diagnostic/${id}`);
 }
+
+export function saveLead(data) {
+  return request('/leads', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(data)
+  });
+}
+
+export function getAdminLeads() {
+  return request('/admin/leads');
+}
+
+export function updateLeadStatus(id, status) {
+  return request(`/admin/leads/${id}/status`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ status })
+  });
+}
