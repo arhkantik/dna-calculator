@@ -242,36 +242,32 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
 
       {/* CTA */}
       <div className="cta-block">
-        <div className="cta-badge">Бесплатно · Только 3 места в неделю</div>
+        <div className="cta-badge">Бесплатно · Без обязательств</div>
         <h2 className="cta-title">
-          Узнайте, как забрать эти деньги уже в следующем месяце
+          Разберём ваши цифры лично
         </h2>
         <p className="cta-text">
-          Эксперт команды Ксении Смирновой разберёт ваш бизнес лично —
-          по цифрам, которые вы только что получили.
+          Эксперт команды Ксении Смирновой посмотрит на результаты диагностики и разберёт точки роста именно вашего бизнеса — и что нужно сделать чтобы прийти к этим показателям.
         </p>
 
         <div className="cta-bullets">
           <div className="cta-bullet">
             <span className="cta-bullet-icon">✓</span>
-            <span>Конкретный план — что делать в первые 30 дней</span>
+            <span>Разбор точек роста именно вашего бизнеса — не общие советы</span>
           </div>
           <div className="cta-bullet">
             <span className="cta-bullet-icon">✓</span>
-            <span>Разбор точек роста именно вашего бизнеса, а не общие советы</span>
+            <span>Поймёте за счёт чего реально можно вырасти в вашей нише</span>
           </div>
           <div className="cta-bullet">
             <span className="cta-bullet-icon">✓</span>
-            <span>Ответы на ваши вопросы — без скриптов и давления</span>
+            <span>Честно скажем что нужно сделать — без давления</span>
           </div>
         </div>
 
         <button className="btn-cta" onClick={handleBooking}>
-          Записаться на бесплатный разбор →
+          Записаться на разбор →
         </button>
-        <div className="cta-fine">
-          Разбор занимает 30–40 минут. Бесплатно и без обязательств.
-        </div>
       </div>
 
       {/* Actions */}
