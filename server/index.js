@@ -9,6 +9,7 @@ const cors    = require('cors');
 const { calculate }       = require('./calculate');
 const { saveDiagnostic, getHistory, getDiagnosticById } = require('./db');
 const { saveLead, getLeads, updateLeadStatus, markLeadClickedTg, updateLeadManager } = require('./leads-db');
+const { appendLead } = require('./sheets');
 
 const app  = express();
 const PROD = process.env.NODE_ENV === 'production';
@@ -85,6 +86,12 @@ app.post('/api/leads', async (req, res) => {
       topPains:         d.topPains || [],
       modulesTriggered: d.modulesTriggered || []
     });
+    // Асинхронно пишем в Google Sheets (не блокируем ответ)
+    getLeads().then(all => {
+      const lead = all.find(l => l.id === id);
+      if (lead) appendLead(lead);
+    }).catch(() => {});
+
     res.json({ ok: true, id });
   } catch (err) {
     console.error(err);
