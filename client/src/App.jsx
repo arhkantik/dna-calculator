@@ -78,9 +78,9 @@ export default function App() {
   }
 
   async function handleBooking() {
-    if (!results || !leadData) return;
+    if (!results || !leadData) return null;
     try {
-      await saveLead({
+      const { id } = await saveLead({
         name:             leadData.name,
         telegram:         leadData.telegram,
         niche:            step1Data.niche,
@@ -102,8 +102,10 @@ export default function App() {
         })),
         modulesTriggered: (results.growthPoints || []).map(p => p.moduleId)
       });
+      return id;
     } catch (e) {
       console.error('Save lead error:', e);
+      return null;
     }
   }
 

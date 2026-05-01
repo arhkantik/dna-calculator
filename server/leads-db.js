@@ -24,9 +24,15 @@ db.exec(`
     potential_annual  INTEGER,
     top_pains         TEXT,
     modules_triggered TEXT,
-    status            TEXT DEFAULT 'new'
+    status            TEXT DEFAULT 'new',
+    clicked_tg        INTEGER DEFAULT 0,
+    clicked_tg_at     TEXT
   )
 `);
+
+// Миграция: добавляем поля если таблица уже существует без них
+try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg INTEGER DEFAULT 0`); } catch {}
+try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg_at TEXT`); } catch {}
 
 const insertStmt = db.prepare(`
   INSERT INTO leads
@@ -72,4 +78,10 @@ function updateLeadStatus(id, status) {
   db.prepare('UPDATE leads SET status = ? WHERE id = ?').run(status, Number(id));
 }
 
-module.exports = { saveLead, getLeads, getLeadById, updateLeadStatus };
+function markLeadClickedTg(id) {
+  db.prepare(
+    `UPDATE leads SET clicked_tg = 1, clicked_tg_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?`
+  ).run(Number(id));
+}
+
+module.exports = { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg };

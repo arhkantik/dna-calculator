@@ -44,3 +44,11 @@ export function updateLeadStatus(id, status) {
     body:    JSON.stringify({ status })
   });
 }
+
+export function markLeadClicked(lead_id) {
+  return request('/lead-clicked', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ lead_id })
+  });
+}

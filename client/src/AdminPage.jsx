@@ -114,6 +114,7 @@ export default function AdminPage() {
                   <th>Выручка</th>
                   <th>Потенциал/мес</th>
                   <th>Топ-боль</th>
+                  <th>Написал в TG</th>
                   <th>Статус</th>
                   <th>Действия</th>
                 </tr>
@@ -144,6 +145,9 @@ export default function AdminPage() {
                         <td className="admin-potential">{fmt(lead.potential_monthly)} ₽</td>
                         <td className="admin-pain">
                           {topPain ? `${topPain.label}: +${fmt(topPain.amount)} ₽` : '—'}
+                        </td>
+                        <td style={{ textAlign: 'center', fontSize: 18 }}>
+                          {lead.clicked_tg ? '✅' : '—'}
                         </td>
                         <td>
                           <select
@@ -178,7 +182,7 @@ export default function AdminPage() {
 
                       {isExpanded && (
                         <tr className="detail-row">
-                          <td colSpan={9}>
+                          <td colSpan={10}>
                             <div className="lead-detail">
                               <div className="detail-grid">
                                 <div><b>Ниша:</b> {NICHE_LABELS[lead.niche] || lead.niche}</div>

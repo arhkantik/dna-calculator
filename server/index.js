@@ -8,7 +8,7 @@ const cors    = require('cors');
 
 const { calculate }       = require('./calculate');
 const { saveDiagnostic, getHistory, getDiagnosticById } = require('./db');
-const { saveLead, getLeads, updateLeadStatus }          = require('./leads-db');
+const { saveLead, getLeads, updateLeadStatus, markLeadClickedTg } = require('./leads-db');
 
 const app  = express();
 const PROD = process.env.NODE_ENV === 'production';
@@ -110,6 +110,19 @@ app.post('/api/leads', (req, res) => {
       modulesTriggered: d.modulesTriggered || []
     });
     res.json({ ok: true, id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/lead-clicked — фиксация нажатия кнопки "Записаться"
+app.post('/api/lead-clicked', (req, res) => {
+  try {
+    const { lead_id } = req.body;
+    if (!lead_id) return res.status(400).json({ error: 'lead_id required' });
+    markLeadClickedTg(lead_id);
+    res.json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

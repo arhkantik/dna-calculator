@@ -1,4 +1,5 @@
 import React from 'react';
+import { markLeadClicked } from './api.js';
 
 const MODULE_NAMES = {
   1: 'Финансы и учёт',
@@ -6,6 +7,44 @@ const MODULE_NAMES = {
   3: 'Продажи и скрипты',
   4: 'Удержание клиентов и CRM',
   5: 'Управление сотрудниками'
+};
+
+const MODULE_DETAILS = {
+  1: {
+    icon:        '📊',
+    title:       'Финансы и учёт',
+    subtitle:    'Наведите порядок в деньгах за 2 недели',
+    description: 'На этом модуле вы разберёте финансовую модель своего бизнеса, найдёте где конкретно утекает прибыль и выстроите управленческий учёт. Ксения разбирает DDS-таблицу, P&L и точку безубыточности — после этого модуля вы будете знать чистую прибыль до копейки и понимать какие расходы реально можно срезать.',
+    tools:       ['DDS-таблица', 'P&L', 'Точка безубыточности', 'Финмодель']
+  },
+  2: {
+    icon:        '📣',
+    title:       'Маркетинг и привлечение клиентов',
+    subtitle:    'Стабильный поток новых клиентов без слива бюджета',
+    description: 'Ксения разбирает каналы привлечения которые реально работают в бьюти: геомаркетинг через Яндекс.Карты и 2ГИС, работу с блогерами без переплат, партнёрские программы с соседним бизнесом. Всё это — бесплатные или почти бесплатные инструменты которые дают стабильный поток без зависимости от таргета.',
+    tools:       ['Геомаркетинг', 'Блогеры', 'Партнёрки', 'Лид-магниты']
+  },
+  3: {
+    icon:        '💬',
+    title:       'Продажи и скрипты',
+    subtitle:    'Система продаж которая работает без вас',
+    description: 'Ксения даёт готовые скрипты прозвона спящей базы, допродаж на кресле и заполнения расписания через администратора. Разбирает как за 50 звонков по базе получить 10 записей и 40–70 тыс. рублей в кассу без рекламного бюджета. После модуля ваши мастера и администратор продают — а не просто принимают клиентов.',
+    tools:       ['Скрипты прозвона', 'Скрипты допродаж', 'Скрипты заполнения расписания']
+  },
+  4: {
+    icon:        '🔄',
+    title:       'Удержание клиентов и CRM',
+    subtitle:    'Верните спящих клиентов и снизьте % отмен',
+    description: 'На этом модуле разбирается как настроить CRM-автоматизацию возврата клиентов, выстроить программу лояльности и создать WOW-точки контакта которые заставляют возвращаться. Отдельный блок — работа с потеряшками: как вернуть тех кто ушёл 3–6 месяцев назад и не дать уйти тем кто на грани.',
+    tools:       ['CRM-автоматизация', 'Программа лояльности', 'Реактивация базы']
+  },
+  5: {
+    icon:        '👥',
+    title:       'Управление сотрудниками',
+    subtitle:    'Выйдите из операционки и масштабируйтесь',
+    description: 'Ксения разбирает систему найма которая позволяет брать правильных мастеров с первого раза, схему мотивации (оклад + % с продаж + бонусы) которая заставляет команду продавать и не уходить, и карьерный трек который удерживает лучших людей. После модуля вы знаете как нанять ещё одного мастера и загрузить его за 2–3 недели.',
+    tools:       ['Система найма', 'Мотивация ФОТ+%', 'Карьерный трек', 'KPI', 'Регламенты']
+  }
 };
 
 function fmt(n) {
@@ -91,15 +130,46 @@ function GrowthCard({ point }) {
   );
 }
 
+function ModuleCard({ moduleId }) {
+  const m = MODULE_DETAILS[moduleId];
+  if (!m) return null;
+  return (
+    <div className="module-detail-card">
+      <div className="module-detail-header">
+        <span className="module-detail-icon">{m.icon}</span>
+        <div>
+          <div className="module-detail-title">МОДУЛЬ {moduleId} — {m.title}</div>
+          <div className="module-detail-subtitle">{m.subtitle}</div>
+        </div>
+      </div>
+      <p className="module-detail-desc">{m.description}</p>
+      <div className="module-detail-tools">
+        {m.tools.map(t => (
+          <span key={t} className="module-tool-tag">{t}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Step3Results({ results, leadName, onReset, onBooking }) {
   const { formData } = results;
-  const baseSize     = formData?.baseSize     || 0;
-  const abonPotential = results.abonPotential || 0;
+  const baseSize      = formData?.baseSize     || 0;
+  const abonPotential = results.abonPotential  || 0;
 
-  function handleBooking() {
+  // Уникальные moduleId из точек роста, макс 3
+  const triggeredModules = [...new Set(
+    (results.growthPoints || []).map(p => p.moduleId).filter(Boolean)
+  )].slice(0, 3);
+
+  async function handleBooking() {
+    let leadId = null;
+    if (onBooking) leadId = await onBooking();
+    if (leadId) {
+      try { await markLeadClicked(leadId); } catch {}
+    }
     const username = (import.meta.env.VITE_TG_MANAGER_USERNAME || 'manager').replace('@', '');
     window.open(`https://t.me/${username}?text=ХОЧУ%20РАЗБОР`, '_blank');
-    if (onBooking) onBooking();
   }
 
   return (
@@ -144,6 +214,14 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
         </div>
       )}
 
+      {/* Карточки модулей */}
+      {triggeredModules.length > 0 && (
+        <>
+          <div className="section-title">Что именно разбирается на курсе по вашим точкам роста:</div>
+          {triggeredModules.map(id => <ModuleCard key={id} moduleId={id} />)}
+        </>
+      )}
+
       {/* Первый месяц */}
       {abonPotential > 0 && (
         <>
@@ -162,7 +240,7 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
         </>
       )}
 
-      {/* CTA — призыв на разбор */}
+      {/* CTA */}
       <div className="cta-block">
         <div className="cta-badge">Бесплатно · Только 3 места в неделю</div>
         <h2 className="cta-title">
