@@ -839,6 +839,24 @@ body {
   border-radius: 4px;
 }
 
+/* Near-norm "all good" block */
+.near-norm-card {
+  border-left: 4px solid #27ae60;
+  background: #f0fdf4;
+}
+.near-norm-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 10px;
+}
+.near-norm-text {
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.65;
+  margin: 0;
+}
+
 /* Module detail cards */
 .module-detail-card {
   background: #fff;

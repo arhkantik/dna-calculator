@@ -41,6 +41,8 @@ const TARGET_LOAD  = 0.65;
 const CONSERVATIVE = 0.70;
 const NORM_RATE    = 0.20;
 
+const LOAD_VALUES = { lt50: 0.45, '5065': 0.575, '6575': 0.70, gt75: 0.80 };
+
 function fmtRu(n) {
   return new Intl.NumberFormat('ru-RU').format(Math.round(n));
 }
@@ -59,14 +61,17 @@ function calculate(input) {
   const masterRevDay = nicheData[cityKey];
   const unusedSeats  = Math.max(0, seats - masters);
 
-  // 1. Физический потолок бизнеса
-  const ceiling     = masters * WORK_DAYS * masterRevDay;
-  const currentLoad = ceiling > 0 ? revenue / ceiling : 0;
+  // 1. Физический потолок — для расчёта абсолютного потенциала в рублях
+  const ceiling = masters * WORK_DAYS * masterRevDay;
 
-  // 2. Потенциал загрузки — только до 65% от потолка
+  // 2. Загрузка — доверяем ответу пользователя
+  const currentLoad = LOAD_VALUES[answers.q_load] ?? 0.575;
+  const underloaded = currentLoad < TARGET_LOAD; // только lt50 и 5065
+
+  // 3. Потенциал загрузки — только если пользователь ниже 65%
   let loadPotential = 0;
-  if (currentLoad < TARGET_LOAD) {
-    loadPotential = Math.max(0, ceiling * TARGET_LOAD - revenue);
+  if (underloaded) {
+    loadPotential = Math.max(0, ceiling * TARGET_LOAD - ceiling * currentLoad);
   }
 
   // 3. Потенциал незадействованных мест
@@ -126,14 +131,15 @@ function calculate(input) {
     });
   }
 
-  if (loadPotential > 0) {
+  if (underloaded && loadPotential > 0) {
+    const loadLabel = answers.q_load === 'lt50' ? 'меньше 50%' : '50–65%';
     points.push({
       key:         'load',
       label:       'Недозагрузка рабочих мест',
       amount:      Math.round(loadPotential),
-      severity:    currentLoad < 0.50 ? 'critical' : 'important',
+      severity:    answers.q_load === 'lt50' ? 'critical' : 'important',
       icon:        '📅',
-      description: `Загрузка ${Math.round(currentLoad * 100)}% — ниже нормы 65%. При грамотном заполнении расписания — дополнительно +${fmtRu(Math.round(loadPotential))} ₽/мес.`,
+      description: `Загрузка ${loadLabel} — ниже нормы 65%. При грамотном заполнении расписания — дополнительно +${fmtRu(Math.round(loadPotential))} ₽/мес.`,
       caseText:    'Продлили рабочие часы на 2 часа → +30% к выручке без новых вложений',
       moduleId:    3,
       mainPain:    'загрузка'

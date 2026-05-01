@@ -152,15 +152,29 @@ function ModuleCard({ moduleId }) {
   );
 }
 
+// Наиболее релевантный модуль по ответам для экрана "всё хорошо"
+function pickBestModule(answers) {
+  if (answers.q_upsell === 'never' || answers.q_upsell === 'sometimes') return 3;
+  if (answers.q_finance === 'no' || answers.q_finance === 'rough')       return 1;
+  if (answers.q_hire === 'hard' || answers.q_self === 'much')            return 5;
+  if (answers.q_traffic === 'unstable' || answers.q_newcli === 'want_more') return 2;
+  return 4;
+}
+
 export default function Step3Results({ results, leadName, onReset, onBooking }) {
   const { formData } = results;
   const baseSize      = formData?.baseSize     || 0;
   const abonPotential = results.abonPotential  || 0;
+  const revenue       = formData?.revenue      || 0;
+
+  const isNearNorm = revenue > 0 && results.totalMonthly < revenue * 0.08;
 
   // Уникальные moduleId из точек роста, макс 3
-  const triggeredModules = [...new Set(
-    (results.growthPoints || []).map(p => p.moduleId).filter(Boolean)
-  )].slice(0, 3);
+  const triggeredModules = isNearNorm
+    ? [pickBestModule(formData?.answers || {})]
+    : [...new Set(
+        (results.growthPoints || []).map(p => p.moduleId).filter(Boolean)
+      )].slice(0, 3);
 
   async function handleBooking() {
     let leadId = null;
@@ -201,23 +215,33 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
         <AkbBar activeRate={results.activeRate} />
       </div>
 
-      {/* Точки роста */}
-      {results.growthPoints && results.growthPoints.length > 0 ? (
-        <>
-          <div className="section-title">Точки роста — куда уходят деньги прямо сейчас</div>
-          {results.growthPoints.map((p, i) => <GrowthCard key={i} point={p} />)}
-        </>
-      ) : (
-        <div className="card no-issues">
-          <div className="icon">🎉</div>
-          <p>По основным метрикам бизнес в хорошей форме. Есть потенциал для масштабирования.</p>
+      {/* Точки роста или экран "всё хорошо" */}
+      {isNearNorm ? (
+        <div className="card near-norm-card">
+          <div className="near-norm-title">
+            {leadName ? `${leadName}, ваш` : 'Ваш'} бизнес работает лучше большинства
+          </div>
+          <p className="near-norm-text">
+            По ключевым показателям вы уже близко к норме рынка. Это хорошая база — следующий шаг это масштабирование: второй мастер, второй кабинет, выход из операционки и системный рост без вашего постоянного участия.
+          </p>
         </div>
+      ) : (
+        results.growthPoints && results.growthPoints.length > 0 && (
+          <>
+            <div className="section-title">Точки роста — куда уходят деньги прямо сейчас</div>
+            {results.growthPoints.map((p, i) => <GrowthCard key={i} point={p} />)}
+          </>
+        )
       )}
 
       {/* Карточки модулей */}
       {triggeredModules.length > 0 && (
         <>
-          <div className="section-title">Что именно разбирается на курсе по вашим точкам роста:</div>
+          <div className="section-title">
+            {isNearNorm
+              ? 'Следующий шаг для вашего бизнеса:'
+              : 'Что именно разбирается на курсе по вашим точкам роста:'}
+          </div>
           {triggeredModules.map(id => <ModuleCard key={id} moduleId={id} />)}
         </>
       )}
