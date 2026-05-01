@@ -273,6 +273,46 @@ function LeadDetail({ lead }) {
   );
 }
 
+function downloadCSV(leads) {
+  const NICHE_L = { nails:'Ногти/ресницы', sugar:'Шугаринг', hair:'Парикмахерская', laser:'Лазерная', cosmo:'Косметология', massage:'Массаж', complex:'Комплексный' };
+  const STATUS_L = { new:'Новый', contacted:'Написали', scheduled:'Разбор назначен', closed:'Закрыт' };
+  const headers = ['ID','Дата','Источник','Имя','Telegram','Ниша','Город','Выручка','Мастеров','Мест','База','Активных','% АКБ','Потенциал/мес','Потенциал/год','Топ-боль','Менеджер','Статус','Написал в TG'];
+  const rows = leads.map(l => {
+    const topPains = JSON.parse(l.top_pains || '[]');
+    const topPain  = topPains[0] ? `${topPains[0].label}: +${topPains[0].amount} руб` : '';
+    return [
+      l.id,
+      fmtDate(l.created_at),
+      l.source === 'manager' ? 'Созвон' : 'Лид',
+      l.name || '',
+      l.telegram || '',
+      NICHE_L[l.niche] || l.niche || '',
+      l.city === 'moscow' ? 'Москва/СПб' : 'Регион',
+      l.revenue || 0,
+      l.masters || 0,
+      l.seats || 0,
+      l.base_size || 0,
+      l.active_clients || 0,
+      l.active_rate_pct || 0,
+      l.potential_monthly || 0,
+      l.potential_annual || 0,
+      topPain,
+      l.manager || '',
+      STATUS_L[l.status] || l.status || '',
+      l.clicked_tg ? 'Да' : 'Нет'
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+  });
+  const bom = '﻿';
+  const csv = bom + [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminPage() {
   const [leads, setLeads]           = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -349,6 +389,14 @@ export default function AdminPage() {
               {f.label}
             </button>
           ))}
+          <button
+            className="filter-btn"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => downloadCSV(filteredLeads)}
+            disabled={filteredLeads.length === 0}
+          >
+            Скачать CSV
+          </button>
         </div>
 
         {loading && (
