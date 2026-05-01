@@ -183,7 +183,7 @@ export default function Step3Results({ results, leadName, onReset, onBooking }) 
       try { await markLeadClicked(leadId); } catch {}
     }
     const username = (import.meta.env.VITE_TG_MANAGER_USERNAME || 'manager').replace('@', '');
-    window.open(`https://t.me/${username}?text=ХОЧУ%20РАЗБОР`, '_blank');
+    window.open(`https://t.me/${username}?text=Хочу разбор!`, '_blank');
   }
 
   return (
