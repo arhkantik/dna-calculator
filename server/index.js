@@ -16,9 +16,7 @@ const PROD = process.env.NODE_ENV === 'production';
 app.use(cors());
 app.use(express.json());
 
-// ─── Existing internal endpoints ────────────────────────────────────────────
-
-// POST /api/diagnose — calculate only, no Claude
+// POST /api/diagnose
 app.post('/api/diagnose', async (req, res) => {
   try {
     const input = req.body;
@@ -31,18 +29,12 @@ app.post('/api/diagnose', async (req, res) => {
     const calc = calculate(input);
 
     saveDiagnostic({
-      leadName:      input.leadName,
-      segment:       input.segment,
-      niche:         input.niche,
-      city:          input.city,
-      revenue:       input.revenue,
-      masters:       input.masters,
-      seats:         input.seats,
-      baseSize:      input.baseSize,
-      activeClients: input.activeClients,
-      answers:       input.answers,
-      totalMonthly:  calc.totalMonthly,
-      totalAnnual:   calc.totalAnnual,
+      leadName: input.leadName, segment: input.segment,
+      niche: input.niche, city: input.city,
+      revenue: input.revenue, masters: input.masters,
+      seats: input.seats, baseSize: input.baseSize,
+      activeClients: input.activeClients, answers: input.answers,
+      totalMonthly: calc.totalMonthly, totalAnnual: calc.totalAnnual,
       generatedMessage: ''
     });
 
@@ -64,46 +56,30 @@ app.get('/api/diagnostic/:id', (req, res) => {
   try {
     const row = getDiagnosticById(req.params.id);
     if (!row) return res.status(404).json({ error: 'Не найдено' });
-
     const answers = JSON.parse(row.answers);
     const input   = {
-      revenue:       row.revenue,
-      masters:       row.masters,
-      seats:         row.seats,
-      baseSize:      row.base_size,
-      activeClients: row.active_clients,
-      niche:         row.niche,
-      city:          row.city,
-      segment:       row.segment,
-      leadName:      row.lead_name,
-      answers
+      revenue: row.revenue, masters: row.masters, seats: row.seats,
+      baseSize: row.base_size, activeClients: row.active_clients,
+      niche: row.niche, city: row.city, segment: row.segment,
+      leadName: row.lead_name, answers
     };
     const calc = calculate(input);
-
     res.json({ id: row.id, createdAt: row.created_at, leadName: row.lead_name, formData: input, ...calc });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── Public leads ────────────────────────────────────────────────────────────
-
-// POST /api/leads — save lead when they click CTA
-app.post('/api/leads', (req, res) => {
+// POST /api/leads
+app.post('/api/leads', async (req, res) => {
   try {
     const d = req.body;
-    const id = saveLead({
-      name:             d.name,
-      telegram:         d.telegram,
-      niche:            d.niche,
-      city:             d.city,
-      revenue:          Number(d.revenue),
-      masters:          Number(d.masters),
-      seats:            Number(d.seats),
-      baseSize:         Number(d.baseSize),
-      activeClients:    Number(d.activeClients),
-      activeRatePct:    Number(d.activeRatePct),
-      answers:          d.answers || {},
+    const { id } = await saveLead({
+      name: d.name, telegram: d.telegram, niche: d.niche, city: d.city,
+      revenue: Number(d.revenue), masters: Number(d.masters),
+      seats: Number(d.seats), baseSize: Number(d.baseSize),
+      activeClients: Number(d.activeClients), activeRatePct: Number(d.activeRatePct),
+      answers: d.answers || {},
       potentialMonthly: Number(d.potentialMonthly),
       potentialAnnual:  Number(d.potentialAnnual),
       topPains:         d.topPains || [],
@@ -116,12 +92,12 @@ app.post('/api/leads', (req, res) => {
   }
 });
 
-// POST /api/lead-clicked — фиксация нажатия кнопки "Записаться"
-app.post('/api/lead-clicked', (req, res) => {
+// POST /api/lead-clicked
+app.post('/api/lead-clicked', async (req, res) => {
   try {
     const { lead_id } = req.body;
     if (!lead_id) return res.status(400).json({ error: 'lead_id required' });
-    markLeadClickedTg(lead_id);
+    await markLeadClickedTg(lead_id);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -129,21 +105,19 @@ app.post('/api/lead-clicked', (req, res) => {
   }
 });
 
-// ─── Admin ───────────────────────────────────────────────────────────────────
-
 // GET /api/admin/leads
-app.get('/api/admin/leads', (_req, res) => {
-  try { res.json(getLeads()); }
+app.get('/api/admin/leads', async (_req, res) => {
+  try { res.json(await getLeads()); }
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // PATCH /api/admin/leads/:id/status
-app.patch('/api/admin/leads/:id/status', (req, res) => {
+app.patch('/api/admin/leads/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
     const allowed = ['new', 'contacted', 'scheduled', 'closed'];
     if (!allowed.includes(status)) return res.status(400).json({ error: 'Неверный статус' });
-    updateLeadStatus(req.params.id, status);
+    await updateLeadStatus(req.params.id, status);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -151,12 +125,12 @@ app.patch('/api/admin/leads/:id/status', (req, res) => {
 });
 
 // PATCH /api/admin/leads/:id/manager
-app.patch('/api/admin/leads/:id/manager', (req, res) => {
+app.patch('/api/admin/leads/:id/manager', async (req, res) => {
   try {
     const { manager } = req.body;
     const allowed = [null, '', 'Екатерина', 'Артём'];
     if (!allowed.includes(manager)) return res.status(400).json({ error: 'Неверный менеджер' });
-    updateLeadManager(req.params.id, manager);
+    await updateLeadManager(req.params.id, manager);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
