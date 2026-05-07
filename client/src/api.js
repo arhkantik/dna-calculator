@@ -33,8 +33,20 @@ export function saveLead(data) {
   });
 }
 
-export function getAdminLeads() {
-  return request('/admin/leads');
+export function getAdminLeads(includeArchived = false) {
+  return request(`/admin/leads${includeArchived ? '?archived=true' : ''}`);
+}
+
+export function archiveLead(id, archived) {
+  return request(`/admin/leads/${id}/archive`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ archived })
+  });
+}
+
+export function getLeadResults(id) {
+  return request(`/admin/leads/${id}/results`);
 }
 
 export function updateLeadStatus(id, status) {

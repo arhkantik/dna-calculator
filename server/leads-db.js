@@ -40,6 +40,7 @@ if (USE_PG) {
   `)
   .then(() => pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'lead'`))
   .then(() => pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS manager TEXT`))
+  .then(() => pool.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE`))
   .catch(console.error);
 
 } else {
@@ -77,6 +78,7 @@ if (USE_PG) {
   try { db.exec(`ALTER TABLE leads ADD COLUMN clicked_tg_at TEXT`); } catch {}
   try { db.exec(`ALTER TABLE leads ADD COLUMN manager TEXT`); } catch {}
   try { db.exec(`ALTER TABLE leads ADD COLUMN source TEXT DEFAULT 'lead'`); } catch {}
+  try { db.exec(`ALTER TABLE leads ADD COLUMN archived INTEGER DEFAULT 0`); } catch {}
 }
 
 // ─── saveLead ────────────────────────────────────────────────────────────────
@@ -129,12 +131,14 @@ async function saveLead(d) {
 
 // ─── getLeads ────────────────────────────────────────────────────────────────
 
-async function getLeads() {
+async function getLeads(includeArchived = false) {
   if (USE_PG) {
-    const res = await pool.query('SELECT * FROM leads ORDER BY id DESC');
+    const where = includeArchived ? '' : 'WHERE archived = FALSE OR archived IS NULL';
+    const res = await pool.query(`SELECT * FROM leads ${where} ORDER BY id DESC`);
     return res.rows;
   } else {
-    return db.prepare('SELECT * FROM leads ORDER BY id DESC').all();
+    const where = includeArchived ? '' : 'WHERE (archived = 0 OR archived IS NULL)';
+    return db.prepare(`SELECT * FROM leads ${where} ORDER BY id DESC`).all();
   }
 }
 
@@ -187,4 +191,22 @@ async function updateLeadManager(id, manager) {
   }
 }
 
-module.exports = { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg, updateLeadManager };
+// ─── archiveLead / unarchiveLead ─────────────────────────────────────────────
+
+async function archiveLead(id) {
+  if (USE_PG) {
+    await pool.query('UPDATE leads SET archived = TRUE WHERE id = $1', [Number(id)]);
+  } else {
+    db.prepare('UPDATE leads SET archived = 1 WHERE id = ?').run(Number(id));
+  }
+}
+
+async function unarchiveLead(id) {
+  if (USE_PG) {
+    await pool.query('UPDATE leads SET archived = FALSE WHERE id = $1', [Number(id)]);
+  } else {
+    db.prepare('UPDATE leads SET archived = 0 WHERE id = ?').run(Number(id));
+  }
+}
+
+module.exports = { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg, updateLeadManager, archiveLead, unarchiveLead };

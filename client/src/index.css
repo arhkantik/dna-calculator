@@ -997,3 +997,33 @@ body {
   .admin-table { font-size: 12px; }
   .admin-actions { flex-direction: column; }
 }
+
+/* ── PRINT PAGE ────────────────────────────────────────────────────── */
+.print-header { padding: 16px 0 24px; border-bottom: 2px solid #111; margin-bottom: 24px; }
+.print-subtitle { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+/* Archive button */
+.btn-archive {
+  padding: 5px 10px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #6b7280;
+}
+.btn-archive:hover { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+
+@media print {
+  .actions, .btn-primary, .btn-cta, .cta-block, .header { display: none !important; }
+  .print-header { display: block !important; }
+  body { background: #fff !important; }
+  .hero-block { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .card { border: 1px solid #ccc !important; box-shadow: none !important; }
+  .hero-block { page-break-after: avoid; }
+  .growth-card, .module-detail-card, .card { page-break-inside: avoid; }
+  .container, .print-page { max-width: 100% !important; padding: 0 !important; }
+  a[href]::after { content: none !important; }
+}

@@ -4,6 +4,7 @@ import Step1Form      from './Step1Form.jsx';
 import Step2Diagnostic from './Step2Diagnostic.jsx';
 import Step3Results   from './Step3Results.jsx';
 import AdminPage      from './AdminPage.jsx';
+import PrintPage      from './PrintPage.jsx';
 import { diagnose, saveLead } from './api.js';
 
 const STEP_LABELS = ['Данные', 'Диагностика', 'Результат'];
@@ -52,10 +53,12 @@ function detectMode() {
   return 'lead';
 }
 
+const IS_PRINT = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin/print/');
 const IS_ADMIN = typeof window !== 'undefined' && window.location.pathname === '/admin';
 const MODE     = detectMode();
 
 export default function App() {
+  if (IS_PRINT) return <PrintPage />;
   if (IS_ADMIN) return <AdminPage />;
 
   const [step, setStep]           = useState(0);

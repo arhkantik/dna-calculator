@@ -8,7 +8,7 @@ const cors    = require('cors');
 
 const { calculate }       = require('./calculate');
 const { saveDiagnostic, getHistory, getDiagnosticById } = require('./db');
-const { saveLead, getLeads, updateLeadStatus, markLeadClickedTg, updateLeadManager } = require('./leads-db');
+const { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg, updateLeadManager, archiveLead, unarchiveLead } = require('./leads-db');
 const { appendLead } = require('./sheets');
 
 const app  = express();
@@ -113,9 +113,47 @@ app.post('/api/lead-clicked', async (req, res) => {
 });
 
 // GET /api/admin/leads
-app.get('/api/admin/leads', async (_req, res) => {
-  try { res.json(await getLeads()); }
+app.get('/api/admin/leads', async (req, res) => {
+  const includeArchived = req.query.archived === 'true';
+  try { res.json(await getLeads(includeArchived)); }
   catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PATCH /api/admin/leads/:id/archive
+app.patch('/api/admin/leads/:id/archive', async (req, res) => {
+  try {
+    const { archived } = req.body;
+    if (archived) await archiveLead(req.params.id);
+    else          await unarchiveLead(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/leads/:id/results
+app.get('/api/admin/leads/:id/results', async (req, res) => {
+  try {
+    const lead = await getLeadById(req.params.id);
+    if (!lead) return res.status(404).json({ error: 'Не найдено' });
+
+    const answers = JSON.parse(lead.answers || '{}');
+    const input = {
+      revenue:       lead.revenue,
+      masters:       lead.masters,
+      seats:         lead.seats,
+      baseSize:      lead.base_size,
+      activeClients: lead.active_clients,
+      niche:         lead.niche,
+      city:          lead.city,
+      answers
+    };
+    const calc = calculate(input);
+    res.json({ ...calc, formData: { ...input, leadName: lead.name } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PATCH /api/admin/leads/:id/status

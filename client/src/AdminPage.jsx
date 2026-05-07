@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminLeads, updateLeadStatus, updateLeadManager } from './api.js';
+import { getAdminLeads, updateLeadStatus, updateLeadManager, archiveLead } from './api.js';
 
 const NICHE_LABELS = {
   nails:   'Ногти/ресницы',
@@ -318,12 +318,14 @@ export default function AdminPage() {
   const [loading, setLoading]       = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
-    getAdminLeads()
+    setLoading(true);
+    getAdminLeads(showArchived)
       .then(data => { setLeads(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [showArchived]);
 
   async function handleStatusChange(id, status) {
     await updateLeadStatus(id, status);
@@ -333,6 +335,11 @@ export default function AdminPage() {
   async function handleManagerChange(id, manager) {
     await updateLeadManager(id, manager);
     setLeads(prev => prev.map(l => l.id === id ? { ...l, manager } : l));
+  }
+
+  async function handleArchive(id, shouldArchive) {
+    await archiveLead(id, shouldArchive);
+    setLeads(prev => prev.filter(l => l.id !== id));
   }
 
   const filteredLeads = sourceFilter === 'all' ? leads : leads.filter(l => l.source === sourceFilter);
@@ -389,6 +396,12 @@ export default function AdminPage() {
               {f.label}
             </button>
           ))}
+          <button
+            className={`filter-btn${showArchived ? ' active' : ''}`}
+            onClick={() => { setShowArchived(v => !v); setExpandedId(null); }}
+          >
+            {showArchived ? '📋 Активные' : '📦 Архив'}
+          </button>
           <button
             className="filter-btn"
             style={{ marginLeft: 'auto' }}
@@ -502,6 +515,18 @@ export default function AdminPage() {
                               onClick={() => setExpandedId(isExpanded ? null : lead.id)}
                             >
                               {isExpanded ? 'Свернуть' : 'Подробнее'}
+                            </button>
+                            <button
+                              className="btn-detail"
+                              onClick={() => window.open(`/admin/print/${lead.id}`, '_blank')}
+                            >
+                              PDF
+                            </button>
+                            <button
+                              className="btn-archive"
+                              onClick={() => handleArchive(lead.id, !showArchived)}
+                            >
+                              {showArchived ? 'Восстановить' : 'В архив'}
                             </button>
                           </div>
                         </td>
