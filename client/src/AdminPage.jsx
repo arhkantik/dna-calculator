@@ -206,7 +206,17 @@ function fmtDate(iso) {
 
 function tgHandle(raw) {
   if (!raw) return '';
-  return raw.startsWith('@') ? raw.slice(1) : raw;
+  const s = raw.trim();
+  return s.startsWith('@') ? s.slice(1).toLowerCase() : s.toLowerCase();
+}
+
+function normalizeTg(raw) {
+  if (!raw) return '';
+  const s = raw.trim();
+  // phone number — leave as-is
+  if (/^[\d\+\-\s()]{7,}$/.test(s)) return s;
+  const handle = s.startsWith('@') ? s.slice(1) : s;
+  return '@' + handle.toLowerCase();
 }
 
 function AnswerBadge({ color, label }) {
@@ -235,7 +245,7 @@ function LeadDetail({ lead }) {
         <div><span className="detail-key">Имя</span><span className="detail-val">{lead.name || '—'}</span></div>
         <div><span className="detail-key">Telegram</span>
           <a href={`https://t.me/${tgHandle(lead.telegram)}`} target="_blank" rel="noreferrer" className="tg-link">
-            {lead.telegram || '—'}
+            {normalizeTg(lead.telegram) || '—'}
           </a>
         </div>
         <div><span className="detail-key">Ниша</span><span className="detail-val">{NICHE_LABELS[lead.niche] || lead.niche || '—'}</span></div>
@@ -317,17 +327,24 @@ function LeadDetail({ lead }) {
 function downloadCSV(leads) {
   const NICHE_L = { nails:'Ногти/ресницы', sugar:'Шугаринг', hair:'Парикмахерская', laser:'Лазерная', cosmo:'Косметология', massage:'Массаж', complex:'Комплексный' };
   const STATUS_L = { new:'Новый', contacted:'Написали', scheduled:'Разбор назначен', closed:'Закрыт' };
-  const headers = ['ID','Дата','Источник','Имя','Telegram','Ниша','Город','Выручка','Мастеров','Мест','База','Активных','% АКБ','Потенциал/мес','Потенциал/год','Топ-боль','Сегменты','Менеджер','Статус','Написал в TG'];
+
+  const tgCounts = {};
+  leads.forEach(l => { const n = normalizeTg(l.telegram); if (n) tgCounts[n] = (tgCounts[n] || 0) + 1; });
+  const dupTgs = new Set(Object.keys(tgCounts).filter(k => tgCounts[k] > 1));
+
+  const headers = ['ID','Дата','Источник','Имя','Telegram','Дубль','Ниша','Город','Выручка','Мастеров','Мест','База','Активных','% АКБ','Потенциал/мес','Потенциал/год','Топ-боль','Сегменты','Менеджер','Статус','Написал в TG'];
   const rows = leads.map(l => {
     const topPains = JSON.parse(l.top_pains || '[]');
     const topPain  = topPains[0] ? `${topPains[0].label}: +${topPains[0].amount} руб` : '';
     const segs = getSegments(l).map(s => PAIN_SEGMENTS.find(p => p.key === s)?.label || s).join('; ');
+    const normTg = normalizeTg(l.telegram);
     return [
       l.id,
       fmtDate(l.created_at),
       l.source === 'manager' ? 'Созвон' : 'Лид',
       l.name || '',
-      l.telegram || '',
+      normTg,
+      dupTgs.has(normTg) ? 'Да' : 'Нет',
       NICHE_L[l.niche] || l.niche || '',
       l.city === 'moscow' ? 'Москва/СПб' : 'Регион',
       l.revenue || 0,
@@ -386,6 +403,13 @@ export default function AdminPage() {
   }
 
   const filteredLeads = sourceFilter === 'all' ? leads : leads.filter(l => l.source === sourceFilter);
+
+  const duplicateTgs = (() => {
+    const counts = {};
+    leads.forEach(l => { const n = normalizeTg(l.telegram); if (n) counts[n] = (counts[n] || 0) + 1; });
+    return new Set(Object.keys(counts).filter(k => counts[k] > 1));
+  })();
+
   const total        = leads.length;
   const newCount     = leads.filter(l => l.status === 'new').length;
   const avgPotential = total > 0
@@ -509,8 +533,15 @@ export default function AdminPage() {
                             rel="noreferrer"
                             className="tg-link"
                           >
-                            {lead.telegram}
+                            {normalizeTg(lead.telegram)}
                           </a>
+                          {duplicateTgs.has(normalizeTg(lead.telegram)) && (
+                            <span style={{
+                              marginLeft: 4, background: '#fef08a', color: '#854d0e',
+                              borderRadius: 4, padding: '1px 5px', fontSize: 10,
+                              fontWeight: 700, verticalAlign: 'middle'
+                            }}>дубль</span>
+                          )}
                         </td>
                         <td>{NICHE_LABELS[lead.niche] || lead.niche || '—'}</td>
                         <td>{fmt(lead.revenue)} ₽</td>
