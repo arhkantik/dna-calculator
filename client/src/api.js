@@ -72,3 +72,7 @@ export function markLeadClicked(lead_id) {
     body:    JSON.stringify({ lead_id })
   });
 }
+
+export function syncToSheets() {
+  return request('/admin/sync-sheets', { method: 'POST' });
+}

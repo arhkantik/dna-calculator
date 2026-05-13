@@ -9,7 +9,7 @@ const cors    = require('cors');
 const { calculate }       = require('./calculate');
 const { saveDiagnostic, getHistory, getDiagnosticById } = require('./db');
 const { saveLead, getLeads, getLeadById, updateLeadStatus, markLeadClickedTg, updateLeadManager, archiveLead, unarchiveLead } = require('./leads-db');
-const { appendLead } = require('./sheets');
+const { appendLead, syncAllLeads } = require('./sheets');
 
 const app  = express();
 const PROD = process.env.NODE_ENV === 'production';
@@ -178,6 +178,18 @@ app.patch('/api/admin/leads/:id/manager', async (req, res) => {
     await updateLeadManager(req.params.id, manager);
     res.json({ ok: true });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/sync-sheets — выгрузить всех лидов в Google Sheets
+app.post('/api/admin/sync-sheets', async (req, res) => {
+  try {
+    const leads = await getLeads(false);
+    const result = await syncAllLeads(leads);
+    res.json(result);
+  } catch (err) {
+    console.error('[Sheets] sync error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

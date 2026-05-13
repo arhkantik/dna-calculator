@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminLeads, updateLeadStatus, updateLeadManager, archiveLead } from './api.js';
+import { getAdminLeads, updateLeadStatus, updateLeadManager, archiveLead, syncToSheets } from './api.js';
 
 const NICHE_LABELS = {
   nails:   'Ногти/ресницы',
@@ -379,6 +379,7 @@ export default function AdminPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [sourceFilter, setSourceFilter] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -476,6 +477,24 @@ export default function AdminPage() {
             disabled={filteredLeads.length === 0}
           >
             Скачать CSV
+          </button>
+          <button
+            className="filter-btn"
+            style={{ background: '#16a34a', color: '#fff', borderColor: '#16a34a' }}
+            disabled={syncing || leads.length === 0}
+            onClick={async () => {
+              setSyncing(true);
+              try {
+                const res = await syncToSheets();
+                alert(`✅ Выгружено ${res.count} лидов в Google Sheets`);
+              } catch (e) {
+                alert('❌ Ошибка: ' + e.message);
+              } finally {
+                setSyncing(false);
+              }
+            }}
+          >
+            {syncing ? '⏳ Выгружаю...' : '📊 Выгрузить в Sheets'}
           </button>
         </div>
 
