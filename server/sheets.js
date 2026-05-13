@@ -2,13 +2,15 @@
 
 const { google } = require('googleapis');
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-// Колонки: без Источника, Города и Статуса; есть Дубль
+const SHEET_ID   = process.env.GOOGLE_SHEET_ID;
+const BASE_URL   = 'https://dna-calculator-production.up.railway.app';
+
 const HEADERS  = [
   'ID', 'Дата', 'Имя', 'Telegram', 'Дубль', 'Ниша',
   'Выручка', 'Мастеров', 'Мест', 'База', 'Активных', '% АКБ',
   'Потенциал/мес', 'Потенциал/год', 'Топ-боль',
-  'База/АКБ', 'Недозагрузка', 'Нет финучёта', 'Нет допродаж'
+  'База/АКБ', 'Недозагрузка', 'Нет финучёта', 'Нет допродаж',
+  'Результат'
 ];
 
 // Segment column indices (0-based) — сдвинуты после удаления Источника/Города/Статуса
@@ -26,7 +28,8 @@ const COL_WIDTHS = [
   40, 130, 130, 160, 60, 130,  // ID Дата Имя TG Дубль Ниша
   90, 80, 60, 80, 80, 60,      // Выручка Мастеров Мест База Активных %АКБ
   115, 115, 200,               // Потенциал/мес Потенциал/год Топ-боль
-  110, 110, 110, 110           // 4 сегмента
+  110, 110, 110, 110,          // 4 сегмента
+  120                          // Результат
 ];
 
 const NICHE_LABELS = {
@@ -93,7 +96,8 @@ function leadToRow(lead, dupTgs = new Set()) {
     lead.potential_monthly || 0,
     lead.potential_annual  || 0,
     topPain,
-    ...getSegmentValues(lead)
+    ...getSegmentValues(lead),
+    `=HYPERLINK("${BASE_URL}/admin/print/${lead.id}","📊 Открыть")`
   ];
 }
 
@@ -238,7 +242,7 @@ async function syncAllLeads(leads) {
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
     range: 'A1',
-    valueInputOption: 'RAW',
+    valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   });
 
@@ -275,14 +279,14 @@ async function appendLead(lead) {
     if (!res.data.values || res.data.values[0]?.[0] !== 'ID') {
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID, range: 'A1',
-        valueInputOption: 'RAW', requestBody: { values: [HEADERS] }
+        valueInputOption: 'USER_ENTERED', requestBody: { values: [HEADERS] }
       });
     }
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: 'A1',
-      valueInputOption: 'RAW',
+      valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [leadToRow(lead)] }
     });
