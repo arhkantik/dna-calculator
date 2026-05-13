@@ -162,6 +162,37 @@ const DIAGNOSTIC_QUESTIONS = [
   }
 ];
 
+const PAIN_SEGMENTS = [
+  { key: 'база',     label: '👥 База/АКБ',     color: '#fef3c7', text: '#92400e' },
+  { key: 'загрузка', label: '📅 Недозагрузка', color: '#dbeafe', text: '#1e40af' },
+  { key: 'финансы',  label: '💰 Нет финучёта', color: '#fee2e2', text: '#991b1b' },
+  { key: 'продажи',  label: '💬 Нет допродаж', color: '#f3e8ff', text: '#6b21a8' },
+];
+
+function getSegments(lead) {
+  const answers = JSON.parse(lead.answers || '{}');
+  const segs = [];
+  if (parseFloat(lead.active_rate_pct) < 20) segs.push('база');
+  if (['lt50', '5065'].includes(answers.q_load) || (lead.seats || 0) > (lead.masters || 0)) segs.push('загрузка');
+  if (['no', 'rough'].includes(answers.q_finance)) segs.push('финансы');
+  if (['never', 'sometimes'].includes(answers.q_upsell)) segs.push('продажи');
+  return segs;
+}
+
+function SegmentTag({ segKey }) {
+  const seg = PAIN_SEGMENTS.find(s => s.key === segKey);
+  if (!seg) return null;
+  return (
+    <span style={{
+      background: seg.color, color: seg.text, borderRadius: 4,
+      padding: '2px 6px', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+      display: 'inline-block', marginBottom: 2
+    }}>
+      {seg.label}
+    </span>
+  );
+}
+
 function fmt(n) {
   return Number(n || 0).toLocaleString('ru-RU');
 }
@@ -193,6 +224,7 @@ function LeadDetail({ lead }) {
   const answers     = JSON.parse(lead.answers || '{}');
   const topPains    = JSON.parse(lead.top_pains || '[]');
   const modules     = [...new Set(JSON.parse(lead.modules_triggered || '[]'))];
+  const segments    = getSegments(lead);
 
   return (
     <div className="lead-detail">
@@ -252,6 +284,15 @@ function LeadDetail({ lead }) {
         </div>
       </div>
 
+      {segments.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <span className="detail-key">Сегменты боли</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+            {segments.map(s => <SegmentTag key={s} segKey={s} />)}
+          </div>
+        </div>
+      )}
+
       {topPains.length > 0 && (
         <div className="detail-pains">
           {topPains.map((p, i) => (
@@ -276,10 +317,11 @@ function LeadDetail({ lead }) {
 function downloadCSV(leads) {
   const NICHE_L = { nails:'Ногти/ресницы', sugar:'Шугаринг', hair:'Парикмахерская', laser:'Лазерная', cosmo:'Косметология', massage:'Массаж', complex:'Комплексный' };
   const STATUS_L = { new:'Новый', contacted:'Написали', scheduled:'Разбор назначен', closed:'Закрыт' };
-  const headers = ['ID','Дата','Источник','Имя','Telegram','Ниша','Город','Выручка','Мастеров','Мест','База','Активных','% АКБ','Потенциал/мес','Потенциал/год','Топ-боль','Менеджер','Статус','Написал в TG'];
+  const headers = ['ID','Дата','Источник','Имя','Telegram','Ниша','Город','Выручка','Мастеров','Мест','База','Активных','% АКБ','Потенциал/мес','Потенциал/год','Топ-боль','Сегменты','Менеджер','Статус','Написал в TG'];
   const rows = leads.map(l => {
     const topPains = JSON.parse(l.top_pains || '[]');
     const topPain  = topPains[0] ? `${topPains[0].label}: +${topPains[0].amount} руб` : '';
+    const segs = getSegments(l).map(s => PAIN_SEGMENTS.find(p => p.key === s)?.label || s).join('; ');
     return [
       l.id,
       fmtDate(l.created_at),
@@ -297,6 +339,7 @@ function downloadCSV(leads) {
       l.potential_monthly || 0,
       l.potential_annual || 0,
       topPain,
+      segs,
       l.manager || '',
       STATUS_L[l.status] || l.status || '',
       l.clicked_tg ? 'Да' : 'Нет'
@@ -438,6 +481,7 @@ export default function AdminPage() {
                   <th>Выручка</th>
                   <th>Потенциал/мес</th>
                   <th>Топ-боль</th>
+                  <th>Сегменты</th>
                   <th>Написал в TG</th>
                   <th>Менеджер</th>
                   <th>Статус</th>
@@ -473,6 +517,16 @@ export default function AdminPage() {
                         <td className="admin-potential">{fmt(lead.potential_monthly)} ₽</td>
                         <td className="admin-pain">
                           {topPain ? `${topPain.label}: +${fmt(topPain.amount)} ₽` : '—'}
+                        </td>
+                        <td>
+                          {(() => {
+                            const segs = getSegments(lead);
+                            return segs.length > 0
+                              ? <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                  {segs.map(s => <SegmentTag key={s} segKey={s} />)}
+                                </div>
+                              : '—';
+                          })()}
                         </td>
                         <td style={{ textAlign: 'center', fontSize: 18 }}>
                           {lead.clicked_tg ? '✅' : '—'}
@@ -534,7 +588,7 @@ export default function AdminPage() {
 
                       {isExpanded && (
                         <tr className="detail-row">
-                          <td colSpan={12}>
+                          <td colSpan={13}>
                             <LeadDetail lead={lead} />
                           </td>
                         </tr>
