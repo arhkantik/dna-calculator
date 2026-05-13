@@ -3,28 +3,32 @@
 const { google } = require('googleapis');
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+// Колонки: без Источника, Города и Статуса; есть Дубль
 const HEADERS  = [
-  'ID', 'Дата', 'Источник', 'Имя', 'Telegram', 'Ниша', 'Город',
+  'ID', 'Дата', 'Имя', 'Telegram', 'Дубль', 'Ниша',
   'Выручка', 'Мастеров', 'Мест', 'База', 'Активных', '% АКБ',
   'Потенциал/мес', 'Потенциал/год', 'Топ-боль',
   'База/АКБ', 'Недозагрузка', 'Нет финучёта', 'Нет допродаж',
-  'Менеджер', 'Статус'
+  'Менеджер'
 ];
 
-// Segment column indices (0-based)
+// Segment column indices (0-based) — сдвинуты после удаления Источника/Города/Статуса
 const SEG_COLS = [
-  { index: 16, label: '👥 База/АКБ',     bg: { red: 0.996, green: 0.949, blue: 0.800 }, fg: { red: 0.573, green: 0.251, blue: 0.055 } },
-  { index: 17, label: '📅 Недозагрузка', bg: { red: 0.859, green: 0.929, blue: 0.996 }, fg: { red: 0.118, green: 0.251, blue: 0.686 } },
-  { index: 18, label: '💰 Нет финучёта', bg: { red: 0.996, green: 0.886, blue: 0.886 }, fg: { red: 0.600, green: 0.106, blue: 0.106 } },
-  { index: 19, label: '💬 Нет допродаж', bg: { red: 0.949, green: 0.906, blue: 1.000 }, fg: { red: 0.420, green: 0.129, blue: 0.627 } },
+  { index: 15, label: '👥 База/АКБ',     bg: { red: 0.996, green: 0.949, blue: 0.800 }, fg: { red: 0.573, green: 0.251, blue: 0.055 } },
+  { index: 16, label: '📅 Недозагрузка', bg: { red: 0.859, green: 0.929, blue: 0.996 }, fg: { red: 0.118, green: 0.251, blue: 0.686 } },
+  { index: 17, label: '💰 Нет финучёта', bg: { red: 0.996, green: 0.886, blue: 0.886 }, fg: { red: 0.600, green: 0.106, blue: 0.106 } },
+  { index: 18, label: '💬 Нет допродаж', bg: { red: 0.949, green: 0.906, blue: 1.000 }, fg: { red: 0.420, green: 0.129, blue: 0.627 } },
 ];
+
+// Дубль колонка (index 4): желтый если дубль
+const DUP_COL = { index: 4, bg: { red: 1.0, green: 0.949, blue: 0.4 }, fg: { red: 0.4, green: 0.2, blue: 0.0 } };
 
 const COL_WIDTHS = [
-  40, 130, 70, 130, 160, 130, 90,   // ID Дата Источник Имя TG Ниша Город
-  90, 80, 60, 80, 80, 60,            // Выручка Мастеров Мест База Активных %АКБ
-  115, 115, 200,                     // Потенциал/мес Потенциал/год Топ-боль
-  110, 110, 110, 110,                // 4 сегмента
-  110, 120                           // Менеджер Статус
+  40, 130, 130, 160, 60, 130,  // ID Дата Имя TG Дубль Ниша
+  90, 80, 60, 80, 80, 60,      // Выручка Мастеров Мест База Активных %АКБ
+  115, 115, 200,               // Потенциал/мес Потенциал/год Топ-боль
+  110, 110, 110, 110,          // 4 сегмента
+  110                          // Менеджер
 ];
 
 const NICHE_LABELS = {
@@ -71,17 +75,17 @@ function getSegmentValues(lead) {
   ];
 }
 
-function leadToRow(lead) {
+function leadToRow(lead, dupTgs = new Set()) {
   const topPains = JSON.parse(lead.top_pains || '[]');
   const topPain  = topPains[0] ? `${topPains[0].label}: +${topPains[0].amount} ₽` : '';
+  const tg       = normalizeTg(lead.telegram);
   return [
     lead.id,
     new Date(lead.created_at).toLocaleString('ru-RU'),
-    lead.source === 'manager' ? 'Созвон' : 'Лид',
     lead.name    || '',
-    normalizeTg(lead.telegram),
+    tg,
+    dupTgs.has(tg) ? 'Дубль' : '',
     NICHE_LABELS[lead.niche] || lead.niche || '',
-    lead.city === 'moscow' ? 'Москва/СПб' : 'Регион',
     lead.revenue        || 0,
     lead.masters        || 0,
     lead.seats          || 0,
@@ -92,8 +96,7 @@ function leadToRow(lead) {
     lead.potential_annual  || 0,
     topPain,
     ...getSegmentValues(lead),
-    lead.manager || '',
-    STATUS_LABELS[lead.status] || lead.status || ''
+    lead.manager || ''
   ];
 }
 
@@ -189,7 +192,31 @@ async function applyFormatting(sheets, tabId, dataRows) {
         },
         index: 0
       }
-    }))
+    })),
+    // Conditional formatting: yellow for "Дубль" column
+    {
+      addConditionalFormatRule: {
+        rule: {
+          ranges: [{ sheetId: tabId, startRowIndex: 1, endRowIndex: 10000, startColumnIndex: DUP_COL.index, endColumnIndex: DUP_COL.index + 1 }],
+          booleanRule: {
+            condition: { type: 'NOT_BLANK' },
+            format: {
+              backgroundColor: DUP_COL.bg,
+              textFormat: { foregroundColor: DUP_COL.fg, bold: true }
+            }
+          }
+        },
+        index: 0
+      }
+    },
+    // Center align "Дубль" column
+    {
+      repeatCell: {
+        range: { sheetId: tabId, startRowIndex: 1, endRowIndex: endRow, startColumnIndex: DUP_COL.index, endColumnIndex: DUP_COL.index + 1 },
+        cell: { userEnteredFormat: { horizontalAlignment: 'CENTER' } },
+        fields: 'userEnteredFormat.horizontalAlignment'
+      }
+    }
   ];
 
   await sheets.spreadsheets.batchUpdate({
@@ -206,7 +233,11 @@ async function syncAllLeads(leads) {
 
   await sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: 'A:Z' });
 
-  const values = [HEADERS, ...leads.map(leadToRow)];
+  const tgCounts = {};
+  leads.forEach(l => { const n = normalizeTg(l.telegram); if (n) tgCounts[n] = (tgCounts[n] || 0) + 1; });
+  const dupTgs = new Set(Object.keys(tgCounts).filter(k => tgCounts[k] > 1));
+
+  const values = [HEADERS, ...leads.map(l => leadToRow(l, dupTgs))];
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
     range: 'A1',
